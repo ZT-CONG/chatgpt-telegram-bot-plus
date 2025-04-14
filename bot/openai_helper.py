@@ -53,7 +53,12 @@ def default_max_tokens(model: str) -> int:
     elif model in GPT_4O_MODELS:
         return 4096
     elif model in O_MODELS:
-        return 4096
+    if model == "o1":
+        return 100_000
+    elif model == "o1-preview":
+        return 32_768
+    else:
+        return 65_536
 
 
 def are_functions_available(model: str) -> bool:
@@ -66,6 +71,27 @@ def are_functions_available(model: str) -> bool:
         return False
     return True
 
+def __prepare_common_args(self, chat_id, stream=False, is_vision=False):
+    # 判断是否是Vision模型
+    if is_vision:
+        model = self.config['vision_model']
+        max_tokens = self.config['vision_max_tokens']
+        n_choices = 1  # Vision模型固定只能返回1个结果
+    else:
+        model = self.config['model']
+        max_tokens = self.config['max_tokens']
+        n_choices = self.config['n_choices']
+
+    return {
+        'model': model,
+        'messages': self.conversations[chat_id],
+        'temperature': self.config['temperature'],
+        'n': n_choices,
+        'max_tokens': max_tokens,
+        'presence_penalty': self.config['presence_penalty'],
+        'frequency_penalty': self.config['frequency_penalty'],
+        'stream': stream
+    }
 
 # Load translations
 parent_dir_path = os.path.join(os.path.dirname(__file__), os.pardir)
@@ -571,7 +597,7 @@ raise Exception(f" _{localized_text('error', bot_language)}._ \n{error_msg}") fr
         Resets the conversation history.
         """
         if content == '':
-            content = self.config['assistant_prompt']
+            content = self.config.get('assistant_prompt', 'You are a helpful assistant.')
         self.conversations[chat_id] = [{"role": "assistant" if self.config['model'] in O_MODELS else "system", "content": content}]
         self.conversations_vision[chat_id] = False
 
@@ -708,8 +734,19 @@ raise Exception(f" _{localized_text('error', bot_language)}._ \n{error_msg}") fr
         detail = self.config['vision_detail']
         if detail == 'low':
             return base_tokens
-        elif detail == 'high' or detail == 'auto': # assuming worst cost for auto
-            f = max(w / 768, h / 2048)
+        elif detail == 'high' or detail == 'auto':
+    target_short_side = 768
+    if w > h:
+        h = int(h * (target_short_side / w))
+        w = target_short_side
+    else:
+        w = int(w * (target_short_side / h))
+        h = target_short_side
+    
+    tw = (w + 511) // 512
+    th = (h + 511) // 512
+    tiles = tw * th
+    num_tokens = base_tokens + tiles * 170
             if f > 1:
                 w, h = int(w / f), int(h / f)
             tw, th = (w + 511) // 512, (h + 511) // 512

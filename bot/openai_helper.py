@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 import datetime
 import logging
@@ -17,6 +18,12 @@ from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_t
 from utils import is_direct_result, encode_image, decode_image
 from plugin_manager import PluginManager
 
+from telegram import Update
+from telegram.ext import ContextTypes
+
+async def send_message(update: Update, text: str):
+    await update.message.reply_text(text.encode('utf-8').decode('utf-8'))
+    
 # Models can be found here: https://platform.openai.com/docs/models/overview
 # Models gpt-3.5-turbo-0613 and  gpt-3.5-turbo-16k-0613 will be deprecated on June 13, 2024
 GPT_3_MODELS = ("gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-3.5-turbo-0613")
@@ -142,7 +149,7 @@ class OpenAIHelper:
                 content = choice.message.content.strip()
                 if index == 0:
                     self.__add_to_history(chat_id, role="assistant", content=content)
-                answer += f'{index + 1}\u20e3\n'
+                answer += f'{index + 1}[1]\n'
                 answer += content
                 answer += '\n\n'
         else:
@@ -496,7 +503,7 @@ class OpenAIHelper:
                 content = choice.message.content.strip()
                 if index == 0:
                     self.__add_to_history(chat_id, role="assistant", content=content)
-                answer += f'{index + 1}\u20e3\n'
+                answer += f'{index + 1}[1]\n'
                 answer += content
                 answer += '\n\n'
         else:

@@ -1,7 +1,17 @@
 import logging
 import os
 
-from dotenv import load_dotenv
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+missing_vars = []
+if not TELEGRAM_BOT_TOKEN:
+    missing_vars.append("TELEGRAM_BOT_TOKEN")
+if not OPENAI_API_KEY:
+    missing_vars.append("OPENAI_API_KEY")
+
+if missing_vars:
+    raise EnvironmentError(f"Missing environment variables: {', '.join(missing_vars)}")
 
 from plugin_manager import PluginManager
 from openai_helper import OpenAIHelper, default_max_tokens, are_functions_available

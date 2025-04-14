@@ -834,7 +834,7 @@ class ChatGPTTelegramBot:
             bot_language = self.config['bot_language']
             if callback_data:
                 reply_markup = InlineKeyboardMarkup([[
-                    InlineKeyboardButton(text=f'🤖 {localized_text("answer_with_chatgpt", bot_language)}',
+                    InlineKeyboardButton(text=f'bot{localized_text("answer_with_chatgpt", bot_language)}',
                                          callback_data=callback_data)
                 ]])
 

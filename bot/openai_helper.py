@@ -53,12 +53,7 @@ def default_max_tokens(model: str) -> int:
     elif model in GPT_4O_MODELS:
         return 4096
     elif model in O_MODELS:
-    if model == "o1":
-        return 100_000
-    elif model == "o1-preview":
-        return 32_768
-    else:
-        return 65_536
+        return 4096
 
 
 def are_functions_available(model: str) -> bool:
@@ -71,27 +66,6 @@ def are_functions_available(model: str) -> bool:
         return False
     return True
 
-def __prepare_common_args(self, chat_id, stream=False, is_vision=False):
-    # 判断是否是Vision模型
-    if is_vision:
-        model = self.config['vision_model']
-        max_tokens = self.config['vision_max_tokens']
-        n_choices = 1  # Vision模型固定只能返回1个结果
-    else:
-        model = self.config['model']
-        max_tokens = self.config['max_tokens']
-        n_choices = self.config['n_choices']
-
-    return {
-        'model': model,
-        'messages': self.conversations[chat_id],
-        'temperature': self.config['temperature'],
-        'n': n_choices,
-        'max_tokens': max_tokens,
-        'presence_penalty': self.config['presence_penalty'],
-        'frequency_penalty': self.config['frequency_penalty'],
-        'stream': stream
-    }
 
 # Load translations
 parent_dir_path = os.path.join(os.path.dirname(__file__), os.pardir)
@@ -293,8 +267,7 @@ class OpenAIHelper:
             raise Exception(f" _{localized_text('openai_invalid', bot_language)}._ \n{str(e)}") from e
 
         except Exception as e:
-            error_msg = str(e).encode('ascii', errors='ignore').decode('ascii')
-raise Exception(f" _{localized_text('error', bot_language)}._ \n{error_msg}") from e
+            raise Exception(f" _{localized_text('error', bot_language)}._ \n{str(e)}") from e
 
     async def __handle_function_call(self, chat_id, response, stream=False, times=0, plugins_used=()):
         function_name = ''
@@ -375,8 +348,7 @@ raise Exception(f" _{localized_text('error', bot_language)}._ \n{error_msg}") fr
 
             return response.data[0].url, self.config['image_size']
         except Exception as e:
-            error_msg = str(e).encode('ascii', errors='ignore').decode('ascii')
-raise Exception(f" _{localized_text('error', bot_language)}._ \n{error_msg}") from e
+            raise Exception(f" _{localized_text('error', bot_language)}._ \n{str(e)}") from e
 
     async def generate_speech(self, text: str) -> tuple[any, int]:
         """
@@ -398,8 +370,7 @@ raise Exception(f" _{localized_text('error', bot_language)}._ \n{error_msg}") fr
             temp_file.seek(0)
             return temp_file, len(text)
         except Exception as e:
-            error_msg = str(e).encode('ascii', errors='ignore').decode('ascii')
-raise Exception(f" _{localized_text('error', bot_language)}._ \n{error_msg}") from e
+            raise Exception(f" _{localized_text('error', bot_language)}._ \n{str(e)}") from e
 
     async def transcribe(self, filename):
         """
@@ -494,8 +465,7 @@ raise Exception(f" _{localized_text('error', bot_language)}._ \n{error_msg}") fr
             raise Exception(f" _{localized_text('openai_invalid', bot_language)}._ \n{str(e)}") from e
 
         except Exception as e:
-            error_msg = str(e).encode('ascii', errors='ignore').decode('ascii')
-raise Exception(f" _{localized_text('error', bot_language)}._ \n{error_msg}") from e
+            raise Exception(f" _{localized_text('error', bot_language)}._ \n{str(e)}") from e
 
 
     async def interpret_image(self, chat_id, fileobj, prompt=None):
@@ -597,7 +567,7 @@ raise Exception(f" _{localized_text('error', bot_language)}._ \n{error_msg}") fr
         Resets the conversation history.
         """
         if content == '':
-            content = self.config.get('assistant_prompt', 'You are a helpful assistant.')
+            content = self.config['assistant_prompt']
         self.conversations[chat_id] = [{"role": "assistant" if self.config['model'] in O_MODELS else "system", "content": content}]
         self.conversations_vision[chat_id] = False
 
@@ -734,19 +704,8 @@ raise Exception(f" _{localized_text('error', bot_language)}._ \n{error_msg}") fr
         detail = self.config['vision_detail']
         if detail == 'low':
             return base_tokens
-        elif detail == 'high' or detail == 'auto':
-    target_short_side = 768
-    if w > h:
-        h = int(h * (target_short_side / w))
-        w = target_short_side
-    else:
-        w = int(w * (target_short_side / h))
-        h = target_short_side
-    
-    tw = (w + 511) // 512
-    th = (h + 511) // 512
-    tiles = tw * th
-    num_tokens = base_tokens + tiles * 170
+        elif detail == 'high' or detail == 'auto': # assuming worst cost for auto
+            f = max(w / 768, h / 2048)
             if f > 1:
                 w, h = int(w / f), int(h / f)
             tw, th = (w + 511) // 512, (h + 511) // 512

@@ -1,6 +1,20 @@
 import logging
 import os
 from dotenv import load_dotenv
+from flask import Flask
+from threading import Thread
+
+def run_flask():
+    app = Flask(__name__)
+    
+    @app.route("/")
+    def home():
+        return "Bot is alive!"
+    
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+
+Thread(target=run_flask).start()
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

@@ -1,5 +1,9 @@
 import logging
 import os
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 from dotenv import load_dotenv
 from flask import Flask
 from threading import Thread

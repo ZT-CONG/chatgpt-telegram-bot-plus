@@ -1,11 +1,3 @@
-
-def safe_str(obj):
-    try:
-        return str(obj)
-    except UnicodeEncodeError:
-        return str(obj).encode("utf-8", errors="ignore").decode()
-
-
 from __future__ import annotations
 import datetime
 import logging
@@ -158,7 +150,17 @@ class OpenAIHelper:
             self.__add_to_history(chat_id, role="assistant", content=answer)
 
         bot_language = self.config['bot_language']
-                f"\n\n---\n {', '.join(plugin_names)}"
+        show_plugins_used = len(plugins_used) > 0 and self.config['show_plugins_used']
+        plugin_names = tuple(self.plugin_manager.get_plugin_source_name(plugin) for plugin in plugins_used)
+        if self.config['show_usage']:
+            answer += "\n\n---\n" \
+                      f"token {str(response.usage.total_tokens)} {localized_text('stats_tokens', bot_language)}" \
+                      f" ({str(response.usage.prompt_tokens)} {localized_text('prompt', bot_language)}," \
+                      f" {str(response.usage.completion_tokens)} {localized_text('completion', bot_language)})"
+            if show_plugins_used:
+                answer += f"\nplugin {', '.join(plugin_names)}"
+        elif show_plugins_used:
+            answer += f"\n\n---\nplugin {', '.join(plugin_names)}"
 
         return answer, response.usage.total_tokens
 
@@ -189,7 +191,14 @@ class OpenAIHelper:
         self.__add_to_history(chat_id, role="assistant", content=answer)
         tokens_used = str(self.__count_tokens(self.conversations[chat_id]))
 
-                f"\n\n---\n {', '.join(plugin_names)}"
+        show_plugins_used = len(plugins_used) > 0 and self.config['show_plugins_used']
+        plugin_names = tuple(self.plugin_manager.get_plugin_source_name(plugin) for plugin in plugins_used)
+        if self.config['show_usage']:
+            answer += f"\n\n---\ntoken {tokens_used} {localized_text('stats_tokens', self.config['bot_language'])}"
+            if show_plugins_used:
+                answer += f"\nplugin {', '.join(plugin_names)}"
+        elif show_plugins_used:
+            answer += f"\n\n---\nplugin {', '.join(plugin_names)}"
 
         yield answer, tokens_used
 
@@ -255,10 +264,10 @@ class OpenAIHelper:
             raise e
 
         except openai.BadRequestError as e:
-            raise Exception(f" _{localized_text('openai_invalid', bot_language)}._ \n{str(e)}") from e
+            raise Exception(f"error _{localized_text('openai_invalid', bot_language)}._ error\n{str(e)}") from e
 
         except Exception as e:
-            raise Exception(f" _{localized_text('error', bot_language)}._ \n{str(e)}") from e
+            raise Exception(f"error _{localized_text('error', bot_language)}._ error\n{str(e)}") from e
 
     async def __handle_function_call(self, chat_id, response, stream=False, times=0, plugins_used=()):
         function_name = ''
@@ -333,13 +342,13 @@ class OpenAIHelper:
             if len(response.data) == 0:
                 logging.error(f'No response from GPT: {str(response)}')
                 raise Exception(
-                    f" _{localized_text('error', bot_language)}._ "
-                    f"\n{localized_text('try_again', bot_language)}."
+                    f"error _{localized_text('error', bot_language)}._ "
+                    f"error\n{localized_text('try_again', bot_language)}."
                 )
 
             return response.data[0].url, self.config['image_size']
         except Exception as e:
-            raise Exception(f" _{localized_text('error', bot_language)}._ \n{str(e)}") from e
+            raise Exception(f"error _{localized_text('error', bot_language)}._ error\n{str(e)}") from e
 
     async def generate_speech(self, text: str) -> tuple[any, int]:
         """
@@ -361,7 +370,7 @@ class OpenAIHelper:
             temp_file.seek(0)
             return temp_file, len(text)
         except Exception as e:
-            raise Exception(f" _{localized_text('error', bot_language)}._ \n{str(e)}") from e
+            raise Exception(f"error _{localized_text('error', bot_language)}._ error\n{str(e)}") from e
 
     async def transcribe(self, filename):
         """
@@ -374,7 +383,7 @@ class OpenAIHelper:
                 return result.text
         except Exception as e:
             logging.exception(e)
-            raise Exception(f" _{localized_text('error', self.config['bot_language'])}._ \n{str(e)}") from e
+            raise Exception(f"error _{localized_text('error', self.config['bot_language'])}._ error\n{str(e)}") from e
 
     @retry(
         reraise=True,
@@ -453,10 +462,10 @@ class OpenAIHelper:
             raise e
 
         except openai.BadRequestError as e:
-            raise Exception(f" _{localized_text('openai_invalid', bot_language)}._ \n{str(e)}") from e
+            raise Exception(f"error _{localized_text('openai_invalid', bot_language)}._ error\n{str(e)}") from e
 
         except Exception as e:
-            raise Exception(f" _{localized_text('error', bot_language)}._ \n{str(e)}") from e
+            raise Exception(f"error _{localized_text('error', bot_language)}._ error\n{str(e)}") from e
 
 
     async def interpret_image(self, chat_id, fileobj, prompt=None):
@@ -496,15 +505,17 @@ class OpenAIHelper:
 
         bot_language = self.config['bot_language']
         # Plugins are not enabled either
-        #         if self.config['show_usage']:
+        # show_plugins_used = len(plugins_used) > 0 and self.config['show_plugins_used']
+        # plugin_names = tuple(self.plugin_manager.get_plugin_source_name(plugin) for plugin in plugins_used)
+        if self.config['show_usage']:
             answer += "\n\n---\n" \
-                      f" {str(response.usage.total_tokens)} {localized_text('stats_tokens', bot_language)}" \
+                      f"token {str(response.usage.total_tokens)} {localized_text('stats_tokens', bot_language)}" \
                       f" ({str(response.usage.prompt_tokens)} {localized_text('prompt', bot_language)}," \
                       f" {str(response.usage.completion_tokens)} {localized_text('completion', bot_language)})"
             # if show_plugins_used:
-            #     answer += f"\n🔌 {', '.join(plugin_names)}"
+            #     answer += f"\nplugin {', '.join(plugin_names)}"
         # elif show_plugins_used:
-        #     answer += f"\n\n---\n🔌 {', '.join(plugin_names)}"
+        #     answer += f"\n\n---\nplugin {', '.join(plugin_names)}"
 
         return answer, response.usage.total_tokens
 
@@ -540,12 +551,14 @@ class OpenAIHelper:
         self.__add_to_history(chat_id, role="assistant", content=answer)
         tokens_used = str(self.__count_tokens(self.conversations[chat_id]))
 
-        #        if self.config['show_usage']:
-            answer += f"\n\n---\n {tokens_used} {localized_text('stats_tokens', self.config['bot_language'])}"
+        #show_plugins_used = len(plugins_used) > 0 and self.config['show_plugins_used']
+        #plugin_names = tuple(self.plugin_manager.get_plugin_source_name(plugin) for plugin in plugins_used)
+        if self.config['show_usage']:
+            answer += f"\n\n---\ntoken {tokens_used} {localized_text('stats_tokens', self.config['bot_language'])}"
         #     if show_plugins_used:
-        #         answer += f"\n🔌 {', '.join(plugin_names)}"
+        #         answer += f"\nplugin {', '.join(plugin_names)}"
         # elif show_plugins_used:
-        #     answer += f"\n\n---\n🔌 {', '.join(plugin_names)}"
+        #     answer += f"\n\n---\nplugin {', '.join(plugin_names)}"
 
         yield answer, tokens_used
 

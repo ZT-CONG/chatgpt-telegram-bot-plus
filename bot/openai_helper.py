@@ -264,10 +264,10 @@ class OpenAIHelper:
             raise e
 
         except openai.BadRequestError as e:
-            raise Exception(f"⚠ _{localized_text('openai_invalid', bot_language)}._ ⚠\n{str(e)}") from e
+            raise Exception(f" _{localized_text('openai_invalid', bot_language)}._ \n{str(e)}") from e
 
         except Exception as e:
-            raise Exception(f"⚠ _{localized_text('error', bot_language)}._ ⚠\n{str(e)}") from e
+            raise Exception(f" _{localized_text('error', bot_language)}._ \n{str(e)}") from e
 
     async def __handle_function_call(self, chat_id, response, stream=False, times=0, plugins_used=()):
         function_name = ''
@@ -342,13 +342,13 @@ class OpenAIHelper:
             if len(response.data) == 0:
                 logging.error(f'No response from GPT: {str(response)}')
                 raise Exception(
-                    f"⚠ _{localized_text('error', bot_language)}._ "
-                    f"⚠\n{localized_text('try_again', bot_language)}."
+                    f" _{localized_text('error', bot_language)}._ "
+                    f"\n{localized_text('try_again', bot_language)}."
                 )
 
             return response.data[0].url, self.config['image_size']
         except Exception as e:
-            raise Exception(f"⚠ _{localized_text('error', bot_language)}._ ⚠\n{str(e)}") from e
+            raise Exception(f" _{localized_text('error', bot_language)}._ \n{str(e)}") from e
 
     async def generate_speech(self, text: str) -> tuple[any, int]:
         """
@@ -370,7 +370,7 @@ class OpenAIHelper:
             temp_file.seek(0)
             return temp_file, len(text)
         except Exception as e:
-            raise Exception(f"⚠ _{localized_text('error', bot_language)}._ ⚠\n{str(e)}") from e
+            raise Exception(f" _{localized_text('error', bot_language)}._ \n{str(e)}") from e
 
     async def transcribe(self, filename):
         """
@@ -383,7 +383,7 @@ class OpenAIHelper:
                 return result.text
         except Exception as e:
             logging.exception(e)
-            raise Exception(f"⚠ _{localized_text('error', self.config['bot_language'])}._ ⚠\n{str(e)}") from e
+            raise Exception(f" _{localized_text('error', self.config['bot_language'])}._ \n{str(e)}") from e
 
     @retry(
         reraise=True,
@@ -462,10 +462,10 @@ class OpenAIHelper:
             raise e
 
         except openai.BadRequestError as e:
-            raise Exception(f"⚠ _{localized_text('openai_invalid', bot_language)}._ ⚠\n{str(e)}") from e
+            raise Exception(f" _{localized_text('openai_invalid', bot_language)}._ \n{str(e)}") from e
 
         except Exception as e:
-            raise Exception(f"⚠ _{localized_text('error', bot_language)}._ ⚠\n{str(e)}") from e
+            raise Exception(f" _{localized_text('error', bot_language)}._ \n{str(e)}") from e
 
 
     async def interpret_image(self, chat_id, fileobj, prompt=None):

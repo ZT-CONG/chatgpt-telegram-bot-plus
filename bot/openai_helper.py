@@ -103,7 +103,14 @@ class OpenAIHelper:
         :param config: A dictionary containing the GPT configuration
         :param plugin_manager: The plugin manager
         """
-        http_client = httpx.AsyncClient(proxy=config['proxy']) if 'proxy' in config else None
+        import urllib.parse
+
+        proxy = config.get('proxy')
+        if proxy:
+        proxy = urllib.parse.quote(proxy, safe=':/#?&=@')  
+
+        http_client = httpx.AsyncClient(proxy=proxy, headers={"User-Agent": "MyTelegramBot/1.0"})
+
         self.client = openai.AsyncOpenAI(api_key=config['api_key'], http_client=http_client)
         self.config = config
         self.plugin_manager = plugin_manager
